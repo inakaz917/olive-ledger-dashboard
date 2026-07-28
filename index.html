@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Oliveの決済を自動集計する本人専用家計簿ダッシュボード" />
+    <meta name="description" content="複数カードの決済をまとめて自動集計する本人専用家計簿ダッシュボード" />
     <meta name="theme-color" content="#30462d" />
-    <title>Olive Ledger — 家計簿ダッシュボード</title>
+    <title>Card Ledger — 家計簿ダッシュボード</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main id="signin" class="signin-shell">
       <section class="signin-card">
-        <span class="brand-mark">O</span>
+        <span class="brand-mark">C</span>
         <p class="eyebrow">PRIVATE FINANCE</p>
-        <h1>Olive Ledger</h1>
+        <h1>Card Ledger</h1>
         <p>本人専用の家計簿ダッシュボードです。登録済みのGoogleアカウントでログインしてください。</p>
         <button id="google-signin" class="primary-button" type="button">
           <span class="google-mark">G</span>Googleでログイン
@@ -24,7 +24,7 @@
 
     <main id="denied" class="signin-shell" hidden>
       <section class="signin-card">
-        <span class="brand-mark">O</span>
+        <span class="brand-mark">C</span>
         <p class="eyebrow">PRIVATE FINANCE</p>
         <h1>アクセスできません</h1>
         <p>このダッシュボードは所有者専用です。</p>
@@ -34,9 +34,9 @@
 
     <main id="dashboard" class="dashboard-shell" hidden>
       <header class="topbar">
-        <a class="brand" href="./" aria-label="Olive Ledger ホーム">
-          <span class="brand-mark">O</span>
-          <span><strong>Olive Ledger</strong><small>PERSONAL FINANCE</small></span>
+        <a class="brand" href="./" aria-label="Card Ledger ホーム">
+          <span class="brand-mark">C</span>
+          <span><strong>Card Ledger</strong><small>PERSONAL FINANCE</small></span>
         </a>
         <div class="header-actions">
           <span class="status-pill">自動更新中</span>
@@ -47,8 +47,8 @@
       <section class="hero-row">
         <div>
           <p class="eyebrow">MONEY OVERVIEW</p>
-          <h1>支出の流れを、<br />ひと目で。</h1>
-          <p class="hero-copy">Oliveの利用通知から自動でまとまる、あなただけの家計簿。</p>
+          <h1>すべての支出を、<br />ひと目で。</h1>
+          <p class="hero-copy">Olive・エポス・PayPayカード・イオンカードを、ひとつの家計簿へ。</p>
         </div>
         <nav id="period-tabs" class="period-tabs" aria-label="集計期間">
           <button data-period="7" type="button">7日</button>
@@ -58,6 +58,14 @@
         </nav>
       </section>
 
+
+      <nav id="source-tabs" class="source-tabs" aria-label="カード">
+        <button data-source="all" class="active" type="button">すべて</button>
+        <button data-source="olive" type="button">Olive</button>
+        <button data-source="epos" type="button">エポス</button>
+        <button data-source="paypay_card" type="button">PayPay</button>
+        <button data-source="aeon" type="button">イオン</button>
+      </nav>
       <div id="data-error" class="error-banner" role="alert" hidden></div>
 
       <section class="metric-grid" aria-label="支出集計">
@@ -82,12 +90,12 @@
         <div class="panel-heading"><div><p class="eyebrow">RECENT PAYMENTS</p><h2>最近の決済</h2></div><span id="payment-count"></span></div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>日時</th><th>店舗</th><th>支払方法</th><th>金額</th></tr></thead>
+            <thead><tr><th>日時</th><th>店舗</th><th>カード</th><th>金額</th></tr></thead>
             <tbody id="payment-rows"></tbody>
           </table>
         </div>
       </section>
-      <footer><span>Olive Ledger</span><span>Gmailから安全に自動更新</span></footer>
+      <footer><span>Card Ledger</span><span>カード利用通知から安全に自動更新</span></footer>
     </main>
     <script type="module" src="./app.js"></script>
   </body>

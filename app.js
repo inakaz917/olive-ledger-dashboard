@@ -3,6 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
 const ALLOWED_EMAIL = "inakaz917@gmail.com";
+const CARD_NAMES = {
+  olive: "Olive",
+  epos: "エポス",
+  paypay_card: "PayPayカード",
+  aeon: "イオン",
+};
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const yen = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
@@ -10,6 +16,7 @@ const shortDate = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", mon
 const dateTime = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 let payments = [];
 let period = "30";
+let source = "all";
 
 const byId = (id) => document.getElementById(id);
 const show = (id) => { byId(id).hidden = false; };
@@ -40,10 +47,21 @@ byId("period-tabs").addEventListener("click", (event) => {
   render();
 });
 
+
+byId("source-tabs").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-source]");
+  if (!button) return;
+  source = button.dataset.source;
+  document.querySelectorAll("#source-tabs button").forEach((item) => item.classList.toggle("active", item === button));
+  render();
+});
 function filteredPayments() {
-  if (period === "all") return payments;
-  const cutoff = Date.now() - Number(period) * 24 * 60 * 60 * 1000;
-  return payments.filter((item) => new Date(item.paid_at).getTime() >= cutoff);
+  const cutoff = period === "all" ? null : Date.now() - Number(period) * 24 * 60 * 60 * 1000;
+  return payments.filter((item) => {
+    const inPeriod = cutoff === null || new Date(item.paid_at).getTime() >= cutoff;
+    const isSource = source === "all" || item.source === source;
+    return inPeriod && isSource;
+  });
 }
 
 function totalsBy(items, keyFn) {
@@ -70,12 +88,18 @@ function empty(container, message = "この期間の決済はありません。"
   container.replaceChildren(element("p", "empty-state", message));
 }
 
+function cardName(item) {
+  return CARD_NAMES[item.source] ?? item.payment_method ?? "その他";
+}
+
 function render() {
   const items = filteredPayments();
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const merchants = totalsBy(items, (item) => item.merchant_norm || item.merchant_raw);
   const daily = totalsBy(items, (item) => shortDate.format(new Date(item.paid_at))).sort((a, b) => a[0].localeCompare(b[0], "ja"));
-  const label = period === "all" ? "全期間" : `直近${period}日`;
+  const periodLabel = period === "all" ? "全期間" : "直近" + period + "日";
+  const sourceLabel = source === "all" ? "すべてのカード" : CARD_NAMES[source];
+  const label = periodLabel + "・" + sourceLabel;
 
   byId("total").textContent = yen.format(total);
   byId("count").textContent = `${items.length}件`;
@@ -133,7 +157,7 @@ function render() {
     merchantCell.append(merchant);
     row.append(merchantCell);
     const methodCell = element("td");
-    methodCell.append(element("span", "method-pill", item.payment_method));
+    methodCell.append(element("span", "method-pill source-" + item.source, cardName(item)));
     row.append(methodCell, element("td", "", yen.format(item.amount)));
     rows.append(row);
   });
