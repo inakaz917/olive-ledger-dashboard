@@ -76,9 +76,22 @@
       </section>
 
       <section class="insight-grid">
-        <article class="panel trend-panel">
-          <div class="panel-heading"><div><p class="eyebrow">SPENDING TREND</p><h2>日別の支出</h2></div></div>
-          <div id="bar-chart" class="bar-chart" aria-label="日別支出の棒グラフ"></div>
+        <article class="panel trend-panel category-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">CATEGORY MIX</p><h2>カテゴリ別の支出</h2></div>
+            <span>設定期間の合計と割合</span>
+          </div>
+          <div class="category-breakdown">
+            <div class="category-donut-wrap">
+              <div id="category-donut" class="category-donut" aria-label="カテゴリ別支出割合">
+                <div class="category-donut-center">
+                  <span>期間合計</span>
+                  <strong id="category-total">—</strong>
+                </div>
+              </div>
+            </div>
+            <ol id="category-list" class="category-list"></ol>
+          </div>
         </article>
         <article class="panel merchant-panel">
           <div class="panel-heading"><div><p class="eyebrow">TOP MERCHANTS</p><h2>店舗別</h2></div></div>
@@ -97,6 +110,6 @@
       </section>
       <footer><span>Card Ledger</span><span>カード利用通知から安全に自動更新</span></footer>
     </main>
-    <script type="module" src="./app.js?v=20260729-5"></script>
+    <script type="module" src="./app.js?v=20260729-7"></script>
   </body>
 </html>

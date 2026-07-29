@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CATEGORY_META, categoryFor, categoryMeta } from "./categories.mjs?v=20260729-1";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
@@ -12,7 +13,6 @@ const CARD_NAMES = {
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const yen = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
-const shortDate = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric" });
 const dateTime = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 let payments = [];
 let period = "30";
@@ -96,7 +96,7 @@ function render() {
   const items = filteredPayments();
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const merchants = totalsBy(items, (item) => item.merchant_norm || item.merchant_raw);
-  const daily = totalsBy(items, (item) => shortDate.format(new Date(item.paid_at))).sort((a, b) => a[0].localeCompare(b[0], "ja"));
+  const categories = totalsBy(items, categoryFor);
   const periodLabel = period === "all" ? "全期間" : "直近" + period + "日";
   const sourceLabel = source === "all" ? "すべてのカード" : CARD_NAMES[source];
   const label = periodLabel + "・" + sourceLabel;
@@ -109,21 +109,51 @@ function render() {
   byId("top-merchant-total").textContent = merchants[0] ? yen.format(merchants[0][1]) : "データなし";
   byId("payment-count").textContent = `${items.length}件`;
 
-  const chart = byId("bar-chart");
-  chart.replaceChildren();
-  if (!daily.length) empty(chart);
-  else {
-    const max = Math.max(...daily.map(([, amount]) => amount), 1);
-    daily.slice(-14).forEach(([day, amount]) => {
-      const column = element("div", "bar-column");
-      column.append(element("span", "bar-value", yen.format(amount)));
-      const track = element("div", "bar-track");
-      const bar = element("i");
-      bar.style.height = `${Math.max(8, amount / max * 100)}%`;
-      track.append(bar);
-      column.append(track, element("span", "bar-label", day));
-      chart.append(column);
+  const categoryList = byId("category-list");
+  const categoryDonut = byId("category-donut");
+  categoryList.replaceChildren();
+  byId("category-total").textContent = yen.format(total);
+
+  if (!categories.length) {
+    categoryDonut.style.background = "#e9e9e2";
+    empty(categoryList);
+  } else {
+    let cursor = 0;
+    const segments = [];
+
+    categories.forEach(([name, amount]) => {
+      const meta = categoryMeta(name);
+      const share = total ? amount / total : 0;
+      const start = cursor;
+      cursor += share * 360;
+      segments.push(
+        meta.color + " " + start + "deg " + cursor + "deg"
+      );
+
+      const item = element("li", "category-item");
+      const identity = element("div", "category-identity");
+      const dot = element("i", "category-dot");
+      dot.style.backgroundColor = meta.color;
+      identity.append(dot, element("strong", "", name));
+
+      const values = element("div", "category-values");
+      values.append(
+        element("b", "", yen.format(amount)),
+        element("span", "", (share * 100).toFixed(1) + "%")
+      );
+
+      const progress = element("span", "category-progress");
+      const fill = element("i");
+      fill.style.width = (share * 100).toFixed(2) + "%";
+      fill.style.backgroundColor = meta.color;
+      progress.append(fill);
+
+      item.append(identity, values, progress);
+      categoryList.append(item);
     });
+
+    categoryDonut.style.background =
+      "conic-gradient(" + segments.join(", ") + ")";
   }
 
   const merchantList = byId("merchant-list");
