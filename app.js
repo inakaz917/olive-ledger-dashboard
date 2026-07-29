@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { CATEGORY_META, categoryFor, categoryMeta } from "./categories.mjs?v=20260729-1";
+import { categoryFor, categoryMeta } from "./categories.mjs?v=20260729-2";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
@@ -134,7 +134,12 @@ function render() {
       const identity = element("div", "category-identity");
       const dot = element("i", "category-dot");
       dot.style.backgroundColor = meta.color;
-      identity.append(dot, element("strong", "", name));
+      const labels = element("div", "category-labels");
+      labels.append(
+        element("strong", "", name),
+        element("span", "", meta.major)
+      );
+      identity.append(dot, labels);
 
       const values = element("div", "category-values");
       values.append(
