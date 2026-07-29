@@ -171,13 +171,28 @@ function paymentQuery() {
     .limit(500);
 }
 
-async function loadPayments() {
-  let result = await paymentQuery();
-  if (!result.error) return result;
+const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 
-  const refreshed = await supabase.auth.refreshSession();
-  if (!refreshed.error && refreshed.data.session) {
+async function loadPayments() {
+  const retryDelays = [0, 1000, 3000, 7000, 12000];
+  let result;
+  let sessionRefreshed = false;
+
+  for (const delay of retryDelays) {
+    if (delay) await wait(delay);
     result = await paymentQuery();
+    if (!result.error) return result;
+
+    if (!sessionRefreshed && result.error.code !== "PGRST002") {
+      const refreshed = await supabase.auth.refreshSession();
+      sessionRefreshed = true;
+      if (!refreshed.error && refreshed.data.session) {
+        result = await paymentQuery();
+        if (!result.error) return result;
+      }
+    }
+
+    if (result.error.code !== "PGRST002") return result;
   }
   return result;
 }
