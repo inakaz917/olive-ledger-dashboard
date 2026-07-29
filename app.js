@@ -163,6 +163,25 @@ function render() {
   });
 }
 
+function paymentQuery() {
+  return supabase
+    .from("payments")
+    .select("id,paid_at,amount,merchant_raw,merchant_norm,payment_method,source")
+    .order("paid_at", { ascending: false })
+    .limit(500);
+}
+
+async function loadPayments() {
+  let result = await paymentQuery();
+  if (!result.error) return result;
+
+  const refreshed = await supabase.auth.refreshSession();
+  if (!refreshed.error && refreshed.data.session) {
+    result = await paymentQuery();
+  }
+  return result;
+}
+
 async function start() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) { show("signin"); return; }
@@ -172,13 +191,10 @@ async function start() {
 
   byId("account-button").textContent = `${email} からログアウト`;
   show("dashboard");
-  const { data, error } = await supabase
-    .from("payments")
-    .select("id,paid_at,amount,merchant_raw,merchant_norm,payment_method,source")
-    .order("paid_at", { ascending: false })
-    .limit(500);
+  const { data, error } = await loadPayments();
   if (error) {
-    byId("data-error").textContent = "支出データを取得できませんでした。しばらくしてから再読み込みしてください。";
+    const code = error.code ?? "unknown";
+    byId("data-error").textContent = "支出データを取得できませんでした。ログアウトして再ログインしてください。（エラーコード: " + code + "）";
     byId("data-error").hidden = false;
     return;
   }
