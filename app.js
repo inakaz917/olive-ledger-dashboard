@@ -191,6 +191,13 @@ function render() {
     merchant.append(element("i", "", initials(item.merchant_raw)), document.createTextNode(item.merchant_raw));
     merchantCell.append(merchant);
     row.append(merchantCell);
+    const categoryName = categoryFor(item);
+    const category = categoryMeta(categoryName);
+    const categoryCell = element("td");
+    const categoryPill = element("span", "payment-category", categoryName);
+    categoryPill.style.setProperty("--category-color", category.color);
+    categoryCell.append(categoryPill);
+    row.append(categoryCell);
     const methodCell = element("td");
     methodCell.append(element("span", "method-pill source-" + item.source, cardName(item)));
     row.append(methodCell, element("td", "", yen.format(item.amount)));
