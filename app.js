@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { categoryFor, categoryMeta } from "./categories.mjs?v=20260730-3";
+import { categoryFor, categoryMeta } from "./categories.mjs?v=20260730-4";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";

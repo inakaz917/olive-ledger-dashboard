@@ -220,17 +220,20 @@ export function normalizeMerchant(payment) {
 }
 
 export function categoryFor(payment) {
+  const merchant = normalizeMerchant(payment);
+  if (merchant.includes("ROCKYKANAI")) {
+    return "飲み会・酒";
+  }
+  if (merchant.includes("洋麺屋五右衛門") || merchant.includes("YOMENYA GOEMON")) {
+    return "外食（ランチ・ディナー）";
+  }
+
   const explicit = payment.category_mid ?? payment.category;
   if (
     explicit &&
     CATEGORY_META.some((category) => category.name === explicit)
   ) {
     return explicit;
-  }
-
-  const merchant = normalizeMerchant(payment);
-  if (merchant.includes("ROCKYKANAI")) {
-    return "飲み会・酒";
   }
   const matched = CATEGORY_META.find(
     (category) =>
