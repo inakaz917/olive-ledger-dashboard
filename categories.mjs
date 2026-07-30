@@ -229,6 +229,9 @@ export function categoryFor(payment) {
   }
 
   const merchant = normalizeMerchant(payment);
+  if (merchant.includes("ROCKYKANAI")) {
+    return "飲み会・酒";
+  }
   const matched = CATEGORY_META.find(
     (category) =>
       category.name !== "その他・不明" &&

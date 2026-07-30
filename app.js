@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { categoryFor, categoryMeta } from "./categories.mjs?v=20260729-2";
+import { categoryFor, categoryMeta } from "./categories.mjs?v=20260730-3";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
@@ -201,7 +201,7 @@ function render() {
 function paymentQuery() {
   return supabase
     .from("payments")
-    .select("id,paid_at,amount,merchant_raw,merchant_norm,payment_method,source")
+    .select("id,paid_at,amount,merchant_raw,merchant_norm,payment_method,source,category_mid,category_major,category_method,category_confidence")
     .order("paid_at", { ascending: false })
     .limit(500);
 }
