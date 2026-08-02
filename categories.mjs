@@ -5,6 +5,7 @@ export const MAJOR_CATEGORIES = [
   "余暇・旅行",
   "健康・自己投資",
   "その他・不明",
+  "調整",
 ];
 
 export const CATEGORY_META = [
@@ -196,6 +197,12 @@ export const CATEGORY_META = [
       "AMAZON PRIME", "APPLE.COM/BILL", "GOOGLE PLAY", "PLAYSTATION",
       "NINTENDO", "KINDLE", "サブスク"
     ],
+  },
+  {
+    name: "返金・取消",
+    major: "調整",
+    color: "#7f8c83",
+    keywords: [],
   },
   {
     name: "その他・不明",
