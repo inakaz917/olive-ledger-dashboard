@@ -121,6 +121,15 @@ export const CATEGORY_META = [
     ],
   },
   {
+    name: "バス・交通費",
+    major: "移動",
+    color: "#527fa5",
+    keywords: [
+      "バス", "BUS", "LIMOUSINE WEB", "LIMOUSINE BUS", "高速バス",
+      "リムジンバス"
+    ],
+  },
+  {
     name: "タクシー・配車",
     major: "移動",
     color: "#4d6e9d",
@@ -226,6 +235,18 @@ export function categoryFor(payment) {
   }
   if (merchant.includes("洋麺屋五右衛門") || merchant.includes("YOMENYA GOEMON")) {
     return "外食（ランチ・ディナー）";
+  }
+  if (merchant.includes("AKAGIKOUGEN SA NOBORI") || merchant.includes("HOTTOMOTTO")) {
+    return "外食（ランチ・ディナー）";
+  }
+  if (merchant.includes("IDデビット")) {
+    return "コンビニ・自販機・売店";
+  }
+  if (merchant.includes("GOアプリ(乗車料金)")) {
+    return "タクシー・配車";
+  }
+  if (merchant.includes("LIMOUSINE WEB")) {
+    return "バス・交通費";
   }
 
   const explicit = payment.category_mid ?? payment.category;
