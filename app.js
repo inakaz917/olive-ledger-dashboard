@@ -1,9 +1,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { categoryFor, categoryMeta } from "./categories.mjs?v=20260730-4";
+import { categoryFor, categoryMeta } from "./categories.mjs?v=20260803-1";
+import {
+  availableMonths,
+  filterPaymentsByPeriod,
+  periodLabel,
+} from "./periods.mjs?v=20260803-1";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
 const ALLOWED_EMAIL = "inakaz917@gmail.com";
+const PAYMENT_PAGE_SIZE = 500;
 const CARD_NAMES = {
   olive: "Olive",
   epos: "エポス",
@@ -43,7 +49,17 @@ byId("period-tabs").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-period]");
   if (!button) return;
   period = button.dataset.period;
+  byId("month-select").value = "";
   document.querySelectorAll("#period-tabs button").forEach((item) => item.classList.toggle("active", item === button));
+  render();
+});
+
+byId("month-select").addEventListener("change", (event) => {
+  if (!event.target.value) return;
+  period = `month:${event.target.value}`;
+  document.querySelectorAll("#period-tabs button").forEach((item) => {
+    item.classList.remove("active");
+  });
   render();
 });
 
@@ -56,12 +72,9 @@ byId("source-tabs").addEventListener("click", (event) => {
   render();
 });
 function filteredPayments() {
-  const cutoff = period === "all" ? null : Date.now() - Number(period) * 24 * 60 * 60 * 1000;
-  return payments.filter((item) => {
-    const inPeriod = cutoff === null || new Date(item.paid_at).getTime() >= cutoff;
-    const isSource = source === "all" || item.source === source;
-    return inPeriod && isSource;
-  });
+  return filterPaymentsByPeriod(payments, period).filter(
+    (item) => source === "all" || item.source === source
+  );
 }
 
 function totalsBy(items, keyFn) {
@@ -97,9 +110,9 @@ function render() {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const merchants = totalsBy(items, (item) => item.merchant_norm || item.merchant_raw);
   const categories = totalsBy(items, categoryFor);
-  const periodLabel = period === "all" ? "全期間" : "直近" + period + "日";
+  const selectedPeriodLabel = periodLabel(period);
   const sourceLabel = source === "all" ? "すべてのカード" : CARD_NAMES[source];
-  const label = periodLabel + "・" + sourceLabel;
+  const label = selectedPeriodLabel + "・" + sourceLabel;
 
   byId("total").textContent = yen.format(total);
   byId("count").textContent = `${items.length}件`;
@@ -120,15 +133,19 @@ function render() {
   } else {
     let cursor = 0;
     const segments = [];
+    const positiveCategoryTotal = categories.reduce(
+      (sum, [, amount]) => sum + Math.max(amount, 0),
+      0
+    );
 
     categories.forEach(([name, amount]) => {
       const meta = categoryMeta(name);
-      const share = total ? amount / total : 0;
+      const share = amount > 0 && positiveCategoryTotal ? amount / positiveCategoryTotal : 0;
       const start = cursor;
       cursor += share * 360;
-      segments.push(
-        meta.color + " " + start + "deg " + cursor + "deg"
-      );
+      if (share > 0) {
+        segments.push(meta.color + " " + start + "deg " + cursor + "deg");
+      }
 
       const item = element("li", "category-item");
       const identity = element("div", "category-identity");
@@ -144,7 +161,7 @@ function render() {
       const values = element("div", "category-values");
       values.append(
         element("b", "", yen.format(amount)),
-        element("span", "", (share * 100).toFixed(1) + "%")
+        element("span", "", amount < 0 ? "調整" : (share * 100).toFixed(1) + "%")
       );
 
       const progress = element("span", "category-progress");
@@ -205,12 +222,12 @@ function render() {
   });
 }
 
-function paymentQuery() {
+function paymentQuery(from, to) {
   return supabase
     .from("payments")
     .select("id,paid_at,amount,merchant_raw,merchant_norm,payment_method,source,category_mid,category_major,category_method,category_confidence")
     .order("paid_at", { ascending: false })
-    .limit(500);
+    .range(from, to);
 }
 
 const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -222,21 +239,31 @@ async function loadPayments() {
 
   for (const delay of retryDelays) {
     if (delay) await wait(delay);
-    result = await paymentQuery();
-    if (!result.error) return result;
+    result = await paymentQuery(0, PAYMENT_PAGE_SIZE - 1);
+    if (!result.error) break;
 
     if (!sessionRefreshed && result.error.code !== "PGRST002") {
       const refreshed = await supabase.auth.refreshSession();
       sessionRefreshed = true;
       if (!refreshed.error && refreshed.data.session) {
-        result = await paymentQuery();
-        if (!result.error) return result;
+        result = await paymentQuery(0, PAYMENT_PAGE_SIZE - 1);
+        if (!result.error) break;
       }
     }
 
     if (result.error.code !== "PGRST002") return result;
   }
-  return result;
+  if (result.error) return result;
+  const allPayments = [...(result.data ?? [])];
+  while (result.data?.length === PAYMENT_PAGE_SIZE) {
+    result = await paymentQuery(
+      allPayments.length,
+      allPayments.length + PAYMENT_PAGE_SIZE - 1
+    );
+    if (result.error) return result;
+    allPayments.push(...(result.data ?? []));
+  }
+  return { data: allPayments, error: null };
 }
 
 async function start() {
@@ -256,6 +283,14 @@ async function start() {
     return;
   }
   payments = data ?? [];
+  const monthSelect = byId("month-select");
+  availableMonths(payments).forEach((month) => {
+    const option = document.createElement("option");
+    option.value = month;
+    const [year, number] = month.split("-");
+    option.textContent = `${year}年${Number(number)}月`;
+    monthSelect.append(option);
+  });
   render();
 }
 

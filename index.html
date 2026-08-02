@@ -54,6 +54,10 @@
           <button data-period="7" type="button">7日</button>
           <button data-period="30" class="active" type="button">30日</button>
           <button data-period="90" type="button">90日</button>
+          <button data-period="ytd" type="button">今年</button>
+          <select id="month-select" aria-label="月を選択">
+            <option value="">月を選択</option>
+          </select>
           <button data-period="all" type="button">全期間</button>
         </nav>
       </section>
@@ -70,7 +74,7 @@
 
       <section class="metric-grid" aria-label="支出集計">
         <article class="metric-card featured"><span>支出合計</span><strong id="total">—</strong><small id="range">直近30日</small></article>
-        <article class="metric-card"><span>決済件数</span><strong id="count">—</strong><small>自動取得済み</small></article>
+        <article class="metric-card"><span>決済件数</span><strong id="count">—</strong><small>取得済み</small></article>
         <article class="metric-card"><span>平均決済額</span><strong id="average">—</strong><small>1決済あたり</small></article>
         <article class="metric-card"><span>よく使う店舗</span><strong id="top-merchant" class="merchant-kpi">—</strong><small id="top-merchant-total">データなし</small></article>
       </section>
@@ -108,8 +112,8 @@
           </table>
         </div>
       </section>
-      <footer><span>Card Ledger</span><span>カード利用通知から安全に自動更新</span></footer>
+      <footer><span>Card Ledger</span><span>カード利用通知と過去明細から安全に更新</span></footer>
     </main>
-    <script type="module" src="./app.js?v=20260730-11"></script>
+    <script type="module" src="./app.js?v=20260803-1"></script>
   </body>
 </html>
