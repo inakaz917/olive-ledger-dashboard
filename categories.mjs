@@ -279,3 +279,8 @@ export function categoryMeta(name) {
     CATEGORY_META[CATEGORY_META.length - 1]
   );
 }
+
+export function filterPaymentsByCategory(payments, category = "all") {
+  if (category === "all") return [...payments];
+  return payments.filter((payment) => categoryFor(payment) === category);
+}

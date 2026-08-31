@@ -6,7 +6,7 @@
     <meta name="description" content="複数カードの決済をまとめて自動集計する本人専用家計簿ダッシュボード" />
     <meta name="theme-color" content="#30462d" />
     <title>Card Ledger — 家計簿ダッシュボード</title>
-    <link rel="stylesheet" href="./styles.css?v=20260730-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260831-1" />
   </head>
   <body>
     <main id="signin" class="signin-shell">
@@ -83,7 +83,7 @@
         <article class="panel trend-panel category-panel">
           <div class="panel-heading">
             <div><p class="eyebrow">CATEGORY MIX</p><h2>カテゴリ別の支出</h2></div>
-            <span>設定期間の合計と割合</span>
+            <button id="category-filter-state" class="category-filter-state" type="button" hidden></button>
           </div>
           <div class="category-breakdown">
             <div class="category-donut-wrap">
@@ -114,6 +114,6 @@
       </section>
       <footer><span>Card Ledger</span><span>カード利用通知と過去明細から安全に更新</span></footer>
     </main>
-    <script type="module" src="./app.js?v=20260803-1"></script>
+    <script type="module" src="./app.js?v=20260831-1"></script>
   </body>
 </html>
