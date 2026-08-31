@@ -4,6 +4,7 @@ export const MAJOR_CATEGORIES = [
   "移動",
   "余暇・旅行",
   "健康・自己投資",
+  "資産形成",
   "その他・不明",
   "調整",
 ];
@@ -199,6 +200,15 @@ export const CATEGORY_META = [
     ],
   },
   {
+    name: "投資",
+    major: "資産形成",
+    color: "#3f7c68",
+    keywords: [
+      "SBI証券投信積立", "投信積立", "証券積立", "INVESTMENT",
+      "MUTUAL FUND"
+    ],
+  },
+  {
     name: "返金・取消",
     major: "調整",
     color: "#7f8c83",
@@ -254,6 +264,9 @@ export function categoryFor(payment) {
   }
   if (merchant.includes("LIMOUSINE WEB")) {
     return "バス・交通費";
+  }
+  if (merchant.includes("SBI証券投信積立")) {
+    return "投資";
   }
 
   const explicit = payment.category_mid ?? payment.category;

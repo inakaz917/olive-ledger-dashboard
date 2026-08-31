@@ -3,7 +3,7 @@ import {
   categoryFor,
   categoryMeta,
   filterPaymentsByCategory,
-} from "./categories.mjs?v=20260831-1";
+} from "./categories.mjs?v=20260831-2";
 import {
   availableMonths,
   filterPaymentsByPeriod,
