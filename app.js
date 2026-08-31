@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { categoryFor, categoryMeta } from "./categories.mjs?v=20260803-1";
+import {
+  categoryFor,
+  categoryMeta,
+  filterPaymentsByCategory,
+} from "./categories.mjs?v=20260831-1";
 import {
   availableMonths,
   filterPaymentsByPeriod,
@@ -23,6 +27,7 @@ const dateTime = new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", mont
 let payments = [];
 let period = "30";
 let source = "all";
+let selectedCategory = "all";
 
 const byId = (id) => document.getElementById(id);
 const show = (id) => { byId(id).hidden = false; };
@@ -71,7 +76,21 @@ byId("source-tabs").addEventListener("click", (event) => {
   document.querySelectorAll("#source-tabs button").forEach((item) => item.classList.toggle("active", item === button));
   render();
 });
-function filteredPayments() {
+
+byId("category-list").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-category]");
+  if (!button) return;
+  selectedCategory =
+    selectedCategory === button.dataset.category ? "all" : button.dataset.category;
+  render();
+});
+
+byId("category-filter-state").addEventListener("click", () => {
+  selectedCategory = "all";
+  render();
+});
+
+function periodAndSourcePayments() {
   return filterPaymentsByPeriod(payments, period).filter(
     (item) => source === "all" || item.source === source
   );
@@ -106,13 +125,15 @@ function cardName(item) {
 }
 
 function render() {
-  const items = filteredPayments();
+  const categoryBaseItems = periodAndSourcePayments();
+  const items = filterPaymentsByCategory(categoryBaseItems, selectedCategory);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   const merchants = totalsBy(items, (item) => item.merchant_norm || item.merchant_raw);
-  const categories = totalsBy(items, categoryFor);
+  const categories = totalsBy(categoryBaseItems, categoryFor);
   const selectedPeriodLabel = periodLabel(period);
   const sourceLabel = source === "all" ? "すべてのカード" : CARD_NAMES[source];
-  const label = selectedPeriodLabel + "・" + sourceLabel;
+  const categoryLabel = selectedCategory === "all" ? "" : "・" + selectedCategory;
+  const label = selectedPeriodLabel + "・" + sourceLabel + categoryLabel;
 
   byId("total").textContent = yen.format(total);
   byId("count").textContent = `${items.length}件`;
@@ -124,8 +145,13 @@ function render() {
 
   const categoryList = byId("category-list");
   const categoryDonut = byId("category-donut");
+  const categoryFilterState = byId("category-filter-state");
   categoryList.replaceChildren();
-  byId("category-total").textContent = yen.format(total);
+  byId("category-total").textContent = yen.format(
+    categoryBaseItems.reduce((sum, item) => sum + item.amount, 0)
+  );
+  categoryFilterState.hidden = selectedCategory === "all";
+  categoryFilterState.textContent = selectedCategory + " ×";
 
   if (!categories.length) {
     categoryDonut.style.background = "#e9e9e2";
@@ -148,6 +174,11 @@ function render() {
       }
 
       const item = element("li", "category-item");
+      const button = element("button", "category-button");
+      button.type = "button";
+      button.dataset.category = name;
+      button.setAttribute("aria-pressed", String(selectedCategory === name));
+      if (selectedCategory === name) item.classList.add("active");
       const identity = element("div", "category-identity");
       const dot = element("i", "category-dot");
       dot.style.backgroundColor = meta.color;
@@ -170,7 +201,8 @@ function render() {
       fill.style.backgroundColor = meta.color;
       progress.append(fill);
 
-      item.append(identity, values, progress);
+      button.append(identity, values, progress);
+      item.append(button);
       categoryList.append(item);
     });
 
