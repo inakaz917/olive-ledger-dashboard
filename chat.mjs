@@ -41,7 +41,11 @@ export function setupFinanceChat({ supabase, getContext, refreshPayments }) {
       const messages = {
         unauthorized: "ログインの有効期限が切れました。ページを再読み込みしてください。",
         payments_unavailable: "支出データを取得できませんでした。少し待って再度お試しください。",
-        gemini_unavailable: "Geminiの無料枠へ接続できませんでした。少し待って再度お試しください。",
+        gemini_http_400: "Geminiへの質問形式を処理できませんでした。設定を確認しています。",
+        gemini_http_403: "Gemini APIの利用権限を確認できませんでした。APIキー設定を確認してください。",
+        gemini_http_429: "Geminiの無料利用枠が一時的に上限へ達しました。時間を置いて再度お試しください。",
+        gemini_http_500: "Gemini側で一時エラーが発生しました。少し待って再度お試しください。",
+        gemini_http_503: "Geminiが一時的に混雑しています。少し待って再度お試しください。",
         invalid_ai_response: "AIの回答を確認できませんでした。表現を変えて再度お試しください。",
       };
       throw new Error(messages[code] ?? "家計簿AIへ接続できませんでした。少し待ってから再度お試しください。");

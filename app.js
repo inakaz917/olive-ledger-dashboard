@@ -11,7 +11,7 @@ import {
   jstDateKey,
   periodLabel,
 } from "./periods.mjs?v=20260907-1";
-import { setupFinanceChat } from "./chat.mjs?v=20260907-2";
+import { setupFinanceChat } from "./chat.mjs?v=20260907-3";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
