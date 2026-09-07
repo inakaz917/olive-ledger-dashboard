@@ -6,9 +6,12 @@ import {
 } from "./categories.mjs?v=20260831-2";
 import {
   availableMonths,
+  dailyTotalsForWeek,
   filterPaymentsByPeriod,
+  jstDateKey,
   periodLabel,
-} from "./periods.mjs?v=20260803-1";
+} from "./periods.mjs?v=20260907-1";
+import { setupFinanceChat } from "./chat.mjs?v=20260907-1";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
@@ -59,6 +62,16 @@ byId("period-tabs").addEventListener("click", (event) => {
   render();
 });
 
+function moveWeek(change) {
+  const currentOffset = Number(period.slice(5));
+  const nextOffset = Math.min(0, currentOffset + change);
+  period = `week:${nextOffset}`;
+  render();
+}
+
+byId("previous-week").addEventListener("click", () => moveWeek(-1));
+byId("next-week").addEventListener("click", () => moveWeek(1));
+
 byId("month-select").addEventListener("change", (event) => {
   if (!event.target.value) return;
   period = `month:${event.target.value}`;
@@ -90,10 +103,14 @@ byId("category-filter-state").addEventListener("click", () => {
   render();
 });
 
-function periodAndSourcePayments() {
-  return filterPaymentsByPeriod(payments, period).filter(
+function paymentsForPeriod(periodValue) {
+  return filterPaymentsByPeriod(payments, periodValue).filter(
     (item) => source === "all" || item.source === source
   );
+}
+
+function periodAndSourcePayments() {
+  return paymentsForPeriod(period);
 }
 
 function totalsBy(items, keyFn) {
@@ -124,6 +141,52 @@ function cardName(item) {
   return CARD_NAMES[item.source] ?? item.payment_method ?? "その他";
 }
 
+function renderWeeklyReport(items) {
+  const report = byId("weekly-report");
+  const isWeekly = period.startsWith("week:");
+  report.hidden = !isWeekly;
+  if (!isWeekly) return;
+
+  const offset = Number(period.slice(5));
+  const previousItems = filterPaymentsByCategory(
+    paymentsForPeriod(`week:${offset - 1}`),
+    selectedCategory
+  );
+  const total = items.reduce((sum, item) => sum + item.amount, 0);
+  const previousTotal = previousItems.reduce((sum, item) => sum + item.amount, 0);
+  const change = total - previousTotal;
+  const changeText = previousTotal
+    ? `${change >= 0 ? "+" : ""}${Math.round(change / previousTotal * 100)}%`
+    : "比較データなし";
+
+  byId("week-title").textContent = offset === 0 ? "今週" : periodLabel(period);
+  byId("weekly-total").textContent = yen.format(total);
+  byId("weekly-change").textContent = `先週比 ${changeText}`;
+  byId("weekly-change").classList.toggle("decrease", change < 0);
+  byId("next-week").disabled = offset >= 0;
+
+  const days = dailyTotalsForWeek(items, period);
+  const maxAmount = Math.max(...days.map((day) => Math.max(day.amount, 0)), 1);
+  const today = jstDateKey(new Date());
+  const bars = byId("weekly-bars");
+  bars.replaceChildren();
+  days.forEach((day) => {
+    const column = element("div", "weekly-day");
+    if (day.dateKey === today) column.classList.add("today");
+    if (day.dateKey > today) column.classList.add("future");
+    column.append(element("span", "weekly-bar-value", day.amount ? yen.format(day.amount) : ""));
+    const track = element("div", "weekly-bar-track");
+    const fill = element("i");
+    fill.style.height = `${Math.max(day.amount > 0 ? day.amount / maxAmount * 100 : 3, 3)}%`;
+    track.append(fill);
+    column.append(track, element("b", "weekly-day-label", day.label));
+    bars.append(column);
+  });
+  const peak = days.reduce((best, day) => day.amount > best.amount ? day : best, days[0]);
+  byId("weekly-average").textContent = yen.format(Math.round(total / 7));
+  byId("weekly-peak").textContent = peak.amount ? `${peak.label}曜日 ${yen.format(peak.amount)}` : "—";
+}
+
 function render() {
   const categoryBaseItems = periodAndSourcePayments();
   const items = filterPaymentsByCategory(categoryBaseItems, selectedCategory);
@@ -134,6 +197,8 @@ function render() {
   const sourceLabel = source === "all" ? "すべてのカード" : CARD_NAMES[source];
   const categoryLabel = selectedCategory === "all" ? "" : "・" + selectedCategory;
   const label = selectedPeriodLabel + "・" + sourceLabel + categoryLabel;
+
+  renderWeeklyReport(items);
 
   byId("total").textContent = yen.format(total);
   byId("count").textContent = `${items.length}件`;
@@ -324,6 +389,24 @@ async function start() {
     monthSelect.append(option);
   });
   render();
+  setupFinanceChat({
+    supabase,
+    getContext: () => ({
+      period,
+      source,
+      category: selectedCategory,
+      paymentIds: filterPaymentsByCategory(
+        periodAndSourcePayments(),
+        selectedCategory
+      ).slice(0, 250).map((payment) => payment.id),
+    }),
+    refreshPayments: async () => {
+      const refreshed = await loadPayments();
+      if (refreshed.error) throw new Error("支出データを再取得できませんでした。");
+      payments = refreshed.data ?? [];
+      render();
+    },
+  });
 }
 
 start();

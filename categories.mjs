@@ -180,13 +180,20 @@ export const CATEGORY_META = [
     ],
   },
   {
-    name: "スポーツ・サウナ",
+    name: "スポーツ",
     major: "健康・自己投資",
     color: "#4f8f79",
     keywords: [
       "ジム", "GYM", "フィットネス", "FITNESS", "スポーツ", "SPORTS",
-      "サウナ", "SAUNA", "銭湯", "温浴", "E-MOSHICOM", "MOSHICOM",
-      "ホイッスル"
+      "ゴルフ", "GOLF", "E-MOSHICOM", "MOSHICOM", "ホイッスル"
+    ],
+  },
+  {
+    name: "サウナ・温浴",
+    major: "健康・自己投資",
+    color: "#4f7990",
+    keywords: [
+      "サウナ", "SAUNA", "銭湯", "温浴", "KORIDO-NOYU", "HAMACHOUIIYUEDOYU"
     ],
   },
   {
@@ -267,6 +274,19 @@ export function categoryFor(payment) {
   }
   if (merchant.includes("SBI証券投信積立")) {
     return "投資";
+  }
+  if (
+    merchant.includes("KORIDO-NOYU") ||
+    merchant.includes("HAMACHOUIIYUEDOYU")
+  ) {
+    return "サウナ・温浴";
+  }
+  if (
+    merchant.includes("GOLFTEC") ||
+    merchant.includes("GOLFCLUB") ||
+    merchant.includes("METRO GREEN")
+  ) {
+    return "スポーツ";
   }
 
   const explicit = payment.category_mid ?? payment.category;
