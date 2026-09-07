@@ -12,6 +12,7 @@ import {
   periodLabel,
 } from "./periods.mjs?v=20260907-1";
 import { setupFinanceChat } from "./chat.mjs?v=20260907-3";
+import { setupTrends } from "./trends.mjs?v=1";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";
@@ -31,6 +32,7 @@ let payments = [];
 let period = "30";
 let source = "all";
 let selectedCategory = "all";
+let trends;
 
 const byId = (id) => document.getElementById(id);
 const show = (id) => { byId(id).hidden = false; };
@@ -188,6 +190,7 @@ function renderWeeklyReport(items) {
 }
 
 function render() {
+  trends?.render();
   const categoryBaseItems = periodAndSourcePayments();
   const items = filterPaymentsByCategory(categoryBaseItems, selectedCategory);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
@@ -380,6 +383,19 @@ async function start() {
     return;
   }
   payments = data ?? [];
+  trends = setupTrends(byId("trends-view"), () => payments);
+  function switchView() {
+    const isTrends = location.hash === "#trends";
+    byId("overview-view").hidden = isTrends;
+    byId("trends-view").hidden = !isTrends;
+    byId("chat-launcher").hidden = isTrends;
+    if (isTrends) byId("chat-panel").hidden = true;
+    byId("overview-link").setAttribute("aria-current", isTrends ? "false" : "page");
+    byId("trends-link").setAttribute("aria-current", isTrends ? "page" : "false");
+    trends.render();
+  }
+  window.addEventListener("hashchange", switchView);
+  switchView();
   const monthSelect = byId("month-select");
   availableMonths(payments).forEach((month) => {
     const option = document.createElement("option");
