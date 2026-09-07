@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#30462d" />
     <title>Card Ledger — 家計簿ダッシュボード</title>
     <link rel="stylesheet" href="./styles.css?v=20260907-1" />
+    <link rel="stylesheet" href="./trends.css?v=1" />
   </head>
   <body>
     <main id="signin" class="signin-shell">
@@ -44,6 +45,11 @@
         </div>
       </header>
 
+      <nav class="view-tabs" aria-label="画面切り替え">
+        <a href="#overview" id="overview-link">支出の内訳</a>
+        <a href="#trends" id="trends-link">推移・比較</a>
+      </nav>
+      <div id="overview-view">
       <section class="hero-row">
         <div>
           <p class="eyebrow">MONEY OVERVIEW</p>
@@ -135,6 +141,8 @@
           </table>
         </div>
       </section>
+      </div>
+      <section id="trends-view" hidden aria-label="推移・比較"></section>
       <button id="chat-launcher" class="chat-launcher" type="button" aria-controls="chat-panel" aria-expanded="false">
         <span>✦</span> 家計簿AI
       </button>
@@ -155,6 +163,6 @@
       </aside>
       <footer><span>Card Ledger</span><span>カード利用通知と過去明細から安全に更新</span></footer>
     </main>
-    <script type="module" src="./app.js?v=20260907-4"></script>
+    <script type="module" src="./app.js?v=20260907-trends1"></script>
   </body>
 </html>
