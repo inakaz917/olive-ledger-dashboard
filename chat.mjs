@@ -30,7 +30,22 @@ export function setupFinanceChat({ supabase, getContext, refreshPayments }) {
 
   async function invoke(body) {
     const { data, error } = await supabase.functions.invoke("finance-chat", { body });
-    if (error) throw new Error("家計簿AIへ接続できませんでした。少し待ってから再度お試しください。");
+    if (error) {
+      let code = "";
+      try {
+        const details = await error.context?.json();
+        code = details?.code ?? "";
+      } catch {
+        // Keep the generic message when the gateway does not return JSON.
+      }
+      const messages = {
+        unauthorized: "ログインの有効期限が切れました。ページを再読み込みしてください。",
+        payments_unavailable: "支出データを取得できませんでした。少し待って再度お試しください。",
+        gemini_unavailable: "Geminiの無料枠へ接続できませんでした。少し待って再度お試しください。",
+        invalid_ai_response: "AIの回答を確認できませんでした。表現を変えて再度お試しください。",
+      };
+      throw new Error(messages[code] ?? "家計簿AIへ接続できませんでした。少し待ってから再度お試しください。");
+    }
     return data;
   }
 
