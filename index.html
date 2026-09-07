@@ -6,7 +6,7 @@
     <meta name="description" content="複数カードの決済をまとめて自動集計する本人専用家計簿ダッシュボード" />
     <meta name="theme-color" content="#30462d" />
     <title>Card Ledger — 家計簿ダッシュボード</title>
-    <link rel="stylesheet" href="./styles.css?v=20260831-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260907-1" />
   </head>
   <body>
     <main id="signin" class="signin-shell">
@@ -51,6 +51,7 @@
           <p class="hero-copy">Olive・エポス・PayPayカード・イオンカードを、ひとつの家計簿へ。</p>
         </div>
         <nav id="period-tabs" class="period-tabs" aria-label="集計期間">
+          <button data-period="week:0" type="button">週</button>
           <button data-period="7" type="button">7日</button>
           <button data-period="30" class="active" type="button">30日</button>
           <button data-period="90" type="button">90日</button>
@@ -71,6 +72,28 @@
         <button data-source="aeon" type="button">イオン</button>
       </nav>
       <div id="data-error" class="error-banner" role="alert" hidden></div>
+
+      <section id="weekly-report" class="panel weekly-report" aria-label="週間支出レポート" hidden>
+        <div class="weekly-heading">
+          <div>
+            <p class="eyebrow">WEEKLY REPORT</p>
+            <h2 id="week-title">今週</h2>
+          </div>
+          <div class="week-navigation" aria-label="週を移動">
+            <button id="previous-week" type="button" aria-label="前の週">‹</button>
+            <button id="next-week" type="button" aria-label="次の週">›</button>
+          </div>
+        </div>
+        <div class="weekly-overview">
+          <div><span>この週の支出</span><strong id="weekly-total">—</strong></div>
+          <span id="weekly-change" class="weekly-change">先週比 —</span>
+        </div>
+        <div id="weekly-bars" class="weekly-bars" aria-label="曜日別の支出"></div>
+        <div class="weekly-stats">
+          <div><span>1日平均</span><strong id="weekly-average">—</strong></div>
+          <div><span>最も支出した日</span><strong id="weekly-peak">—</strong></div>
+        </div>
+      </section>
 
       <section class="metric-grid" aria-label="支出集計">
         <article class="metric-card featured"><span>支出合計</span><strong id="total">—</strong><small id="range">直近30日</small></article>
@@ -112,8 +135,26 @@
           </table>
         </div>
       </section>
+      <button id="chat-launcher" class="chat-launcher" type="button" aria-controls="chat-panel" aria-expanded="false">
+        <span>✦</span> 家計簿AI
+      </button>
+      <aside id="chat-panel" class="chat-panel" aria-label="家計簿AIチャット" hidden>
+        <header>
+          <div><span class="chat-spark">✦</span><strong>家計簿AI</strong><small>Gemini 無料枠</small></div>
+          <button id="chat-close" type="button" aria-label="チャットを閉じる">×</button>
+        </header>
+        <div id="chat-messages" class="chat-messages" aria-live="polite">
+          <p class="chat-message assistant">支出について質問したり、「この決済は外食」のように修正を依頼できます。</p>
+        </div>
+        <form id="chat-form" class="chat-form">
+          <label for="chat-input" class="sr-only">家計簿AIへのメッセージ</label>
+          <textarea id="chat-input" maxlength="500" rows="2" placeholder="例：今週は先週より何が増えた？" required></textarea>
+          <button id="chat-send" type="submit">送信</button>
+        </form>
+        <p class="chat-privacy">会話は保存しません。回答生成時だけ、表示中の決済情報をGeminiへ送ります。</p>
+      </aside>
       <footer><span>Card Ledger</span><span>カード利用通知と過去明細から安全に更新</span></footer>
     </main>
-    <script type="module" src="./app.js?v=20260831-2"></script>
+    <script type="module" src="./app.js?v=20260907-2"></script>
   </body>
 </html>
