@@ -39,7 +39,7 @@ const MONTHLY_BUDGETS = {
   "美容・身だしなみ": 2000,
   "通信・光熱・住居サービス": 10000,
   "電車・ICチャージ": 10000,
-  "バス・交通費": 0,
+  "バス・交通費": 1000,
   "タクシー・配車": 3000,
   "車・シェアモビリティ": 15000,
   "スポーツ": 45000,
@@ -47,7 +47,7 @@ const MONTHLY_BUDGETS = {
   "健康・医療": 5000,
   "娯楽・レジャー": 7000,
   "デジタル・サブスク": 5000,
-  "その他・不明": 14000,
+  "その他・不明": 13000,
 };
 const BUDGET_EXCLUDED_CATEGORIES = new Set(["旅行・帰省・宿泊", "投資", "返金・取消"]);
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
