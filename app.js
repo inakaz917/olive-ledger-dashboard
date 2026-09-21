@@ -24,32 +24,6 @@ const CARD_NAMES = {
   paypay_card: "PayPayカード",
   aeon: "イオン",
 };
-const WANT_BUDGET = 240000;
-const MUST_BUDGET = 280000;
-// 食費は小カテゴリまで、月の使い過ぎを見つけられるように予算化する。
-const MONTHLY_BUDGETS = {
-  "コンビニ・自販機・売店": 12000,
-  "カフェ・軽食": 8000,
-  "外食（ランチ・ディナー）": 30000,
-  "飲み会・酒": 30000,
-  "スーパー・食料品": 15000,
-  "日用品・ドラッグ・家電": 10000,
-  "ショッピング（EC・商業施設）": 15000,
-  "衣類": 3000,
-  "美容・身だしなみ": 2000,
-  "通信・光熱・住居サービス": 10000,
-  "電車・ICチャージ": 10000,
-  "バス・交通費": 1000,
-  "タクシー・配車": 3000,
-  "車・シェアモビリティ": 15000,
-  "スポーツ": 45000,
-  "サウナ・温浴": 1000,
-  "健康・医療": 5000,
-  "娯楽・レジャー": 7000,
-  "デジタル・サブスク": 5000,
-  "その他・不明": 13000,
-};
-const BUDGET_EXCLUDED_CATEGORIES = new Set(["旅行・帰省・宿泊", "投資", "返金・取消"]);
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 const yen = new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY", maximumFractionDigits: 0 });
@@ -169,79 +143,6 @@ function cardName(item) {
   return CARD_NAMES[item.source] ?? item.payment_method ?? "その他";
 }
 
-function isBudgetExcluded(item) {
-  const category = categoryFor(item);
-  if (BUDGET_EXCLUDED_CATEGORIES.has(category)) return true;
-  return category === "スポーツ" && item.amount >= 100000 &&
-    (item.merchant_raw ?? "").toUpperCase().includes("GOLFTEC");
-}
-
-function daysInMonth(monthKey) {
-  const [year, month] = monthKey.split("-").map(Number);
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
-function renderMonthlyBudget() {
-  const today = jstDateKey(new Date());
-  const monthKey = today.slice(0, 7);
-  const monthItems = filterPaymentsByPeriod(payments, `month:${monthKey}`);
-  const budgetItems = monthItems.filter((item) => !isBudgetExcluded(item));
-  const spentByCategory = new Map();
-  budgetItems.forEach((item) => {
-    const category = categoryFor(item);
-    spentByCategory.set(category, (spentByCategory.get(category) ?? 0) + item.amount);
-  });
-
-  const spent = budgetItems.reduce((sum, item) => sum + item.amount, 0);
-  const remaining = MUST_BUDGET - spent;
-  const todayNumber = Number(today.slice(-2));
-  const remainingDays = Math.max(0, daysInMonth(monthKey) - todayNumber);
-  const [year, month] = monthKey.split("-");
-
-  byId("budget-month").textContent = `${year}年${Number(month)}月`;
-  byId("budget-status-label").textContent = remaining >= 0 ? "Mustまで残り" : "Mustを超過";
-  byId("budget-remaining").textContent = yen.format(Math.abs(remaining));
-  byId("budget-remaining").classList.toggle("over", remaining < 0);
-  byId("budget-spent").textContent = yen.format(spent);
-  byId("budget-want").textContent = yen.format(WANT_BUDGET);
-  byId("budget-must").textContent = yen.format(MUST_BUDGET);
-  byId("budget-want-progress").style.width = `${Math.min(spent / WANT_BUDGET * 100, 100)}%`;
-  byId("budget-must-progress").style.width = `${Math.min(spent / MUST_BUDGET * 100, 100)}%`;
-  byId("budget-want-progress").classList.toggle("over", spent > WANT_BUDGET);
-  byId("budget-must-progress").classList.toggle("over", spent > MUST_BUDGET);
-  byId("budget-pace").textContent = remaining >= 0
-    ? (remainingDays ? `あと${remainingDays}日・Mustまで1日 ${yen.format(Math.floor(remaining / remainingDays))}` : "今月の集計が完了しました")
-    : "今月の通常予算を超えています";
-
-  const excluded = monthItems.filter(isBudgetExcluded).reduce((sum, item) => sum + item.amount, 0);
-  byId("budget-note").textContent = excluded
-    ? `カテゴリ予算の合計はWant ${yen.format(WANT_BUDGET)}。Mustは予備費 ${yen.format(MUST_BUDGET - WANT_BUDGET)} を含みます。旅行・投資・高額な一括払い ${yen.format(excluded)} は別枠です。`
-    : `カテゴリ予算の合計はWant ${yen.format(WANT_BUDGET)}。Mustは予備費 ${yen.format(MUST_BUDGET - WANT_BUDGET)} を含みます。旅行・投資・高額な一括払いは別枠です。`;
-
-  const categories = byId("budget-categories");
-  categories.replaceChildren();
-  Object.entries(MONTHLY_BUDGETS).forEach(([name, budget]) => {
-    const spentAmount = spentByCategory.get(name) ?? 0;
-    const remainingAmount = budget - spentAmount;
-    const meta = categoryMeta(name);
-    const item = element("article", "budget-category");
-    if (remainingAmount < 0) item.classList.add("over");
-    const heading = element("div", "budget-category-heading");
-    const title = element("span", "");
-    const dot = element("i", "category-dot");
-    dot.style.backgroundColor = meta.color;
-    title.append(dot, document.createTextNode(name));
-    heading.append(title, element("b", "", remainingAmount >= 0 ? `残り ${yen.format(remainingAmount)}` : `超過 ${yen.format(-remainingAmount)}`));
-    const values = element("div", "budget-category-values", `${yen.format(spentAmount)} / ${yen.format(budget)}`);
-    const track = element("span", "budget-category-track");
-    const fill = element("i");
-    fill.style.width = `${Math.min(spentAmount / budget * 100, 100)}%`;
-    fill.style.backgroundColor = remainingAmount < 0 ? "#bd5c4c" : meta.color;
-    track.append(fill);
-    item.append(heading, values, track);
-    categories.append(item);
-  });
-}
 
 function renderWeeklyReport(items) {
   const report = byId("weekly-report");
@@ -302,7 +203,6 @@ function render() {
   const label = selectedPeriodLabel + "・" + sourceLabel + categoryLabel;
 
   renderWeeklyReport(items);
-  renderMonthlyBudget();
 
   byId("total").textContent = yen.format(total);
   byId("count").textContent = `${items.length}件`;
