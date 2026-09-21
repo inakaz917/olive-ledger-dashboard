@@ -34,7 +34,7 @@ function isBudgetItem(payment) {
 const categoryMajor = (payment) => CATEGORY_META.find((item) => item.name === categoryFor(payment))?.major ?? "その他・不明";
 
 export function setupTrends(root, getPayments) {
-  let mode = "week", endOffset = 0, selected = 0, rowLimit = 30, alignLatest = true;
+  let mode = "week", endOffset = 0, selected = 0, rowLimit = 30, alignLatest = true, sortMode = "date", majorCategory = "all";
   root.innerHTML = `
     <div class="hero-row"><div><p class="eyebrow">SPENDING TRENDS</p><h1>支出の変化を、<br>見つける。</h1><p class="hero-copy">週と月を並べて、使い方の変化を確かめましょう。</p></div></div>
     <div class="trend-controls">
@@ -51,7 +51,7 @@ export function setupTrends(root, getPayments) {
       <p id="trend-coverage" class="trend-note"></p>
     </section>
     <div class="trend-details"><section class="panel category-budget"><h2>カテゴリごと・対予算</h2><div id="category-budget"></div></section><section class="panel food-budget"><h2>食費・対予算詳細</h2><div id="food-budget"></div></section></div>
-    <section class="panel payments-panel"><div class="panel-heading"><h2>選択期間の決済</h2><span id="trend-rows-count"></span></div><div class="table-wrap"><table><thead><tr><th>日付</th><th>店舗</th><th>カテゴリ</th><th>カード</th><th>金額</th></tr></thead><tbody id="trend-rows"></tbody></table></div><button type="button" id="trend-more" class="secondary-button">さらに30件表示</button></section>`;
+    <section class="panel payments-panel"><div class="panel-heading payments-heading"><div><h2 id="trend-payments-title">選択期間の決済</h2><small id="trend-payments-scope"></small></div><div class="payments-actions"><span id="trend-rows-count"></span><div class="sort-tabs" aria-label="決済の並び順"><button type="button" data-sort="date">最新順</button><button type="button" data-sort="amount">金額順</button></div></div></div><div class="table-wrap"><table><thead><tr><th>日付</th><th>店舗</th><th>カテゴリ</th><th>カード</th><th>金額</th></tr></thead><tbody id="trend-rows"></tbody></table></div><button type="button" id="trend-more" class="secondary-button">さらに30件表示</button></section>`;
   const el = (id) => root.querySelector(`#${id}`);
   for (const c of CATEGORY_META) {
     const option = node("option", c.name); option.value = c.name; el("trend-category").append(option);
@@ -63,7 +63,9 @@ export function setupTrends(root, getPayments) {
     const investmentOption = [...el("trend-category").options].find((o) => o.value === "投資");
     investmentOption.disabled = !investment;
     if (!investment && el("trend-category").value === "投資") el("trend-category").value = "all";
-    const items = filteredPayments(all, { investment, source: el("trend-source").value, category: el("trend-category").value });
+    const selectedCategory = el("trend-category").value;
+    const filtered = filteredPayments(all, { investment, source: el("trend-source").value, category: selectedCategory });
+    const items = majorCategory === "all" ? filtered : filtered.filter((payment) => categoryMajor(payment) === majorCategory);
     const series = trendSeries(items, mode, endOffset, now);
     const result = comparePeriod(items, mode, selected, now);
     const budgetResult = comparePeriod(all.filter(isBudgetItem), mode, selected, now);
@@ -92,9 +94,9 @@ export function setupTrends(root, getPayments) {
     el("budget-excluded").textContent = mode === "month" ? "総予算から家賃12万円を確保した利用枠です。旅行・投資・ゴルフテックの高額一括払いは別枠です。" : "家賃を除く月間利用枠を、この週の日数で按分しています。旅行・投資・高額一括払いは別枠です。";
     const factor = mode === "month" ? 1 : wantLimit / VARIABLE_WANT;
     const food = el("food-budget"); food.replaceChildren();
-    for (const [name, monthlyLimit] of Object.entries(FOOD_BUDGETS)) { const limit = Math.round(monthlyLimit * factor); const amount = budgetItems.filter((p) => categoryFor(p) === name).reduce((sum, p) => sum + p.amount, 0); const row = node("div", undefined, "food-budget-row"); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); food.append(row); }
+    for (const [name, monthlyLimit] of Object.entries(FOOD_BUDGETS)) { const limit = Math.round(monthlyLimit * factor); const amount = budgetItems.filter((p) => categoryFor(p) === name).reduce((sum, p) => sum + p.amount, 0); const row = node("button", undefined, "food-budget-row budget-filter-row"); row.type = "button"; row.classList.toggle("active", selectedCategory === name && majorCategory === "all"); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); row.addEventListener("click", () => { majorCategory = "all"; el("trend-category").value = selectedCategory === name ? "all" : name; rowLimit = 30; render(); }); food.append(row); }
     const categoryBudget = el("category-budget"); categoryBudget.replaceChildren();
-    for (const [name, monthlyLimit] of Object.entries(CATEGORY_BUDGETS)) { const limit = Math.round(monthlyLimit * factor); const amount = budgetItems.filter((p) => categoryMajor(p) === name).reduce((sum, p) => sum + p.amount, 0); const row = node("div", undefined, "food-budget-row"); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); categoryBudget.append(row); }
+    for (const [name, monthlyLimit] of Object.entries(CATEGORY_BUDGETS)) { const limit = Math.round(monthlyLimit * factor); const amount = budgetItems.filter((p) => categoryMajor(p) === name).reduce((sum, p) => sum + p.amount, 0); const row = node("button", undefined, "food-budget-row budget-filter-row"); row.type = "button"; row.classList.toggle("active", majorCategory === name); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); row.addEventListener("click", () => { majorCategory = majorCategory === name ? "all" : name; el("trend-category").value = "all"; rowLimit = 30; render(); }); categoryBudget.append(row); }
     el("trend-chart-title").textContent = mode === "week" ? "12週間の推移" : "12か月の推移";
     el("trend-coverage").textContent = firstDate ? `取得済み決済：${firstDate}〜${lastDate}。未収録期間は「未収録」と表示します。明細の未取得がある場合、合計・比較もその影響を受けます。` : "まだ決済データがありません。";
     const bars = el("trend-bars"); bars.replaceChildren();
@@ -115,7 +117,11 @@ export function setupTrends(root, getPayments) {
     }
     if (alignLatest) { const scroll = root.querySelector(".trend-chart-scroll"); requestAnimationFrame(() => { scroll.scrollLeft = scroll.scrollWidth; }); alignLatest = false; }
     const rows = el("trend-rows"); rows.replaceChildren();
-    const ordered = [...result.items].sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at));
+    const ordered = [...result.items].sort((a, b) => sortMode === "amount" ? Number(b.amount) - Number(a.amount) : new Date(b.paid_at) - new Date(a.paid_at));
+    const categoryLabel = majorCategory !== "all" ? majorCategory : selectedCategory !== "all" ? selectedCategory : "すべてのカテゴリ";
+    el("trend-payments-title").textContent = `${rangeLabel(result, mode)}の決済`;
+    el("trend-payments-scope").textContent = `${categoryLabel}・${el("trend-source").selectedOptions[0].textContent}`;
+    root.querySelectorAll("[data-sort]").forEach((button) => { button.classList.toggle("active", button.dataset.sort === sortMode); button.setAttribute("aria-pressed", String(button.dataset.sort === sortMode)); });
     for (const p of ordered.slice(0, rowLimit)) {
       const row = node("tr"); for (const text of [jstDateKey(p.paid_at), p.merchant_raw, categoryFor(p), cards[p.source] ?? p.source, yen(p.amount)]) row.append(node("td", text)); rows.append(row);
     }
@@ -123,7 +129,8 @@ export function setupTrends(root, getPayments) {
     el("trend-more").hidden = ordered.length <= rowLimit;
   }
   root.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { mode = b.dataset.mode; selected = 0; endOffset = 0; rowLimit = 30; alignLatest = true; render(); }));
-  root.querySelectorAll("select,input").forEach((input) => input.addEventListener("change", () => { rowLimit = 30; render(); }));
+  root.querySelectorAll("select,input").forEach((input) => input.addEventListener("change", () => { if (input.id === "trend-category") majorCategory = "all"; rowLimit = 30; render(); }));
+  root.querySelectorAll("[data-sort]").forEach((button) => button.addEventListener("click", () => { sortMode = button.dataset.sort; rowLimit = 30; render(); }));
   el("trend-more").addEventListener("click", () => { rowLimit += 30; render(); });
   return { render };
 }
