@@ -8,6 +8,7 @@
     <title>Card Ledger — 家計簿ダッシュボード</title>
     <link rel="stylesheet" href="./styles.css?v=20260907-1" />
     <link rel="stylesheet" href="./trends.css?v=1" />
+    <link rel="stylesheet" href="./budget.css?v=20260922-1" />
   </head>
   <body>
     <main id="signin" class="signin-shell">
@@ -108,6 +109,31 @@
         <article class="metric-card"><span>よく使う店舗</span><strong id="top-merchant" class="merchant-kpi">—</strong><small id="top-merchant-total">データなし</small></article>
       </section>
 
+      <section id="monthly-budget" class="panel budget-panel" aria-label="今月の予算">
+        <div class="panel-heading">
+          <div><p class="eyebrow">MONTHLY BUDGET</p><h2>今月の予算</h2></div>
+          <span id="budget-month"></span>
+        </div>
+        <div class="budget-summary">
+          <div class="budget-remaining">
+            <span id="budget-status-label">Mustまで残り</span>
+            <strong id="budget-remaining">—</strong>
+            <small id="budget-pace">—</small>
+          </div>
+          <div class="budget-numbers">
+            <div><span>通常支出</span><strong id="budget-spent">—</strong></div>
+            <div><span>Want</span><strong id="budget-want">—</strong></div>
+            <div><span>Must</span><strong id="budget-must">—</strong></div>
+          </div>
+        </div>
+        <div class="budget-targets" aria-label="予算の進捗">
+          <div><span>Want</span><i><b id="budget-want-progress"></b></i></div>
+          <div><span>Must</span><i><b id="budget-must-progress"></b></i></div>
+        </div>
+        <p id="budget-note" class="budget-note"></p>
+        <div id="budget-categories" class="budget-categories" aria-label="カテゴリ別の予算"></div>
+      </section>
+
       <section class="insight-grid">
         <article class="panel trend-panel category-panel">
           <div class="panel-heading">
@@ -163,6 +189,6 @@
       </aside>
       <footer><span>Card Ledger</span><span>カード利用通知と過去明細から安全に更新</span></footer>
     </main>
-    <script type="module" src="./app.js?v=20260907-trends1"></script>
+    <script type="module" src="./app.js?v=20260922-budget1"></script>
   </body>
 </html>
