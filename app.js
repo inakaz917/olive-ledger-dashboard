@@ -12,7 +12,7 @@ import {
   periodLabel,
 } from "./periods.mjs?v=20260907-1";
 import { setupFinanceChat } from "./chat.mjs?v=20260907-3";
-import { setupTrends } from "./trends.mjs?v=3";
+import { setupTrends } from "./trends.mjs?v=4";
 
 const SUPABASE_URL = "https://pfmdykcnjpnktvhqpvrx.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JuVghU9v3d12FmLlBRlOiA_n1A5xj2B";

@@ -34,7 +34,7 @@ function isBudgetItem(payment) {
 const categoryMajor = (payment) => CATEGORY_META.find((item) => item.name === categoryFor(payment))?.major ?? "その他・不明";
 
 export function setupTrends(root, getPayments) {
-  let mode = "week", endOffset = 0, selected = 0, rowLimit = 30, alignLatest = true, sortMode = "date", majorCategory = "all";
+  let mode = "week", endOffset = 0, selected = 0, rowLimit = 30, sortMode = "date", majorCategory = "all";
   root.innerHTML = `
     <div class="hero-row"><div><p class="eyebrow">SPENDING TRENDS</p><h1>支出の変化を、<br>見つける。</h1><p class="hero-copy">週と月を並べて、使い方の変化を確かめましょう。</p></div></div>
     <div class="trend-controls">
@@ -66,7 +66,7 @@ export function setupTrends(root, getPayments) {
     const selectedCategory = el("trend-category").value;
     const filtered = filteredPayments(all, { investment, source: el("trend-source").value, category: selectedCategory });
     const items = majorCategory === "all" ? filtered : filtered.filter((payment) => categoryMajor(payment) === majorCategory);
-    const series = trendSeries(items, mode, endOffset, now);
+    const series = trendSeries(items, mode, endOffset, now).reverse();
     const result = comparePeriod(items, mode, selected, now);
     const budgetResult = comparePeriod(all.filter(isBudgetItem), mode, selected, now);
     const budgetItems = budgetResult.items;
@@ -113,9 +113,8 @@ export function setupTrends(root, getPayments) {
       fill.style.height = `${Math.abs(b.amount) / scale * 100}%`;
       if (b.amount < 0) fill.classList.add("negative");
       track.append(fill); button.append(track, node("span", label), node("small", b.partial ? "途中" : " "));
-      button.addEventListener("click", () => { selected = b.offset; rowLimit = 30; alignLatest = false; render(); }); bars.append(button);
+      button.addEventListener("click", () => { selected = b.offset; rowLimit = 30; render(); }); bars.append(button);
     }
-    if (alignLatest) { const scroll = root.querySelector(".trend-chart-scroll"); requestAnimationFrame(() => { scroll.scrollLeft = scroll.scrollWidth; }); alignLatest = false; }
     const rows = el("trend-rows"); rows.replaceChildren();
     const ordered = [...result.items].sort((a, b) => sortMode === "amount" ? Number(b.amount) - Number(a.amount) : new Date(b.paid_at) - new Date(a.paid_at));
     const categoryLabel = majorCategory !== "all" ? majorCategory : selectedCategory !== "all" ? selectedCategory : "すべてのカテゴリ";
@@ -128,7 +127,7 @@ export function setupTrends(root, getPayments) {
     el("trend-rows-count").textContent = `${Math.min(rowLimit, ordered.length)} / ${ordered.length}件`;
     el("trend-more").hidden = ordered.length <= rowLimit;
   }
-  root.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { mode = b.dataset.mode; selected = 0; endOffset = 0; rowLimit = 30; alignLatest = true; render(); }));
+  root.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => { mode = b.dataset.mode; selected = 0; endOffset = 0; rowLimit = 30; render(); }));
   root.querySelectorAll("select,input").forEach((input) => input.addEventListener("change", () => { if (input.id === "trend-category") majorCategory = "all"; rowLimit = 30; render(); }));
   root.querySelectorAll("[data-sort]").forEach((button) => button.addEventListener("click", () => { sortMode = button.dataset.sort; rowLimit = 30; render(); }));
   el("trend-more").addEventListener("click", () => { rowLimit += 30; render(); });
