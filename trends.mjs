@@ -1,4 +1,4 @@
-import { CATEGORY_META, categoryFor } from "./categories.mjs?v=20260907-trends1";
+import { CATEGORY_META, categoryFor } from "./categories.mjs?v=20261019-corrections1";
 import { jstDateKey } from "./periods.mjs?v=20260907-1";
 import { filteredPayments, comparePeriod, trendSeries } from "./trend-data.mjs?v=1";
 
@@ -32,6 +32,31 @@ function isBudgetItem(payment) {
     && !(category === "スポーツ" && payment.amount >= 100000 && (payment.merchant_raw ?? "").toUpperCase().includes("GOLFTEC"));
 }
 const categoryMajor = (payment) => CATEGORY_META.find((item) => item.name === categoryFor(payment))?.major ?? "その他・不明";
+function renderBudgetDonut(container, entries, totalLimit, label) {
+  const spent = entries.reduce((sum, entry) => sum + Math.max(entry.amount, 0), 0);
+  const visibleSpent = Math.min(spent, totalLimit);
+  let cursor = 0;
+  const segments = [];
+  for (const entry of entries) {
+    const portion = totalLimit > 0 ? Math.max(entry.amount, 0) / totalLimit : 0;
+    if (!portion) continue;
+    const end = Math.min(1, cursor + portion) * 360;
+    segments.push(`${entry.color} ${cursor * 360}deg ${end}deg`);
+    cursor += portion;
+    if (cursor >= 1) break;
+  }
+  if (visibleSpent < totalLimit) segments.push(`#e5e7df ${Math.min(1, cursor) * 360}deg 360deg`);
+  const wrap = node("div", undefined, "budget-donut-wrap");
+  const donut = node("div", undefined, "budget-donut");
+  donut.setAttribute("role", "img");
+  donut.setAttribute("aria-label", `${label}: ${yen(spent)} / ${yen(totalLimit)}`);
+  donut.style.background = segments.length ? `conic-gradient(${segments.join(", ")})` : "#e5e7df";
+  const center = node("div", undefined, "budget-donut-center");
+  center.append(node("span", label), node("strong", yen(spent)), node("small", `/ ${yen(totalLimit)}`));
+  donut.append(center);
+  wrap.append(donut);
+  container.append(wrap);
+}
 
 export function setupTrends(root, getPayments) {
   let mode = "week", endOffset = 0, selected = 0, rowLimit = 30, sortMode = "date", majorCategory = "all";
@@ -51,7 +76,7 @@ export function setupTrends(root, getPayments) {
       <div class="trend-chart-scroll"><div id="trend-bars" class="trend-bars" aria-label="期間別支出合計"></div></div>
       <p id="trend-coverage" class="trend-note"></p>
     </section>
-    <div class="trend-details"><section class="panel category-budget"><h2>カテゴリごと・対予算</h2><div id="category-budget"></div></section><section class="panel food-budget"><h2>食費・対予算詳細</h2><div id="food-budget"></div></section></div>
+    <div class="trend-details"><section class="panel category-budget"><h2>カテゴリごと・対予算</h2><p class="budget-chart-note">色は支出内訳、淡色は予算の残りです。</p><div id="category-budget"></div></section><section class="panel food-budget"><h2>食費・対予算</h2><p class="budget-chart-note">色は支出内訳、淡色は予算の残りです。</p><div id="food-budget"></div></section></div>
     <section class="panel payments-panel"><div class="panel-heading payments-heading"><div><h2 id="trend-payments-title">選択期間の決済</h2><small id="trend-payments-scope"></small></div><div class="payments-actions"><span id="trend-rows-count"></span><div class="sort-tabs" aria-label="決済の並び順"><button type="button" data-sort="date">最新順</button><button type="button" data-sort="amount">金額順</button></div></div></div><div class="table-wrap"><table><thead><tr><th>日付</th><th>店舗</th><th>カテゴリ</th><th>カード</th><th>金額</th></tr></thead><tbody id="trend-rows"></tbody></table></div><button type="button" id="trend-more" class="secondary-button">さらに30件表示</button></section>`;
   const el = (id) => root.querySelector(`#${id}`);
   root.querySelector(".trend-chart-scroll").addEventListener("scroll", (event) => {
@@ -98,9 +123,13 @@ export function setupTrends(root, getPayments) {
     el("budget-excluded").textContent = mode === "month" ? "総予算から家賃12万円を確保した利用枠です。旅行・投資・ゴルフテックの高額一括払いは別枠です。" : "家賃を除く月間利用枠を、この週の日数で按分しています。旅行・投資・高額一括払いは別枠です。";
     const factor = mode === "month" ? 1 : wantLimit / VARIABLE_WANT;
     const food = el("food-budget"); food.replaceChildren();
-    for (const [name, monthlyLimit] of Object.entries(FOOD_BUDGETS)) { const limit = Math.round(monthlyLimit * factor); const amount = budgetItems.filter((p) => categoryFor(p) === name).reduce((sum, p) => sum + p.amount, 0); const row = node("button", undefined, "food-budget-row budget-filter-row"); row.type = "button"; row.classList.toggle("active", selectedCategory === name && majorCategory === "all"); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); row.addEventListener("click", () => { majorCategory = "all"; el("trend-category").value = selectedCategory === name ? "all" : name; rowLimit = 30; render(); }); food.append(row); }
+    const foodEntries = Object.entries(FOOD_BUDGETS).map(([name, monthlyLimit]) => ({ name, limit: Math.round(monthlyLimit * factor), amount: budgetItems.filter((p) => categoryFor(p) === name).reduce((sum, p) => sum + p.amount, 0), color: CATEGORY_META.find((item) => item.name === name)?.color ?? "#9da39b" }));
+    renderBudgetDonut(food, foodEntries, foodEntries.reduce((sum, entry) => sum + entry.limit, 0), "食費");
+    for (const entry of foodEntries) { const { name, limit, amount } = entry; const row = node("button", undefined, "food-budget-row budget-filter-row"); row.type = "button"; row.classList.toggle("active", selectedCategory === name && majorCategory === "all"); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; fill.style.backgroundColor = entry.color; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); row.addEventListener("click", () => { majorCategory = "all"; el("trend-category").value = selectedCategory === name ? "all" : name; rowLimit = 30; render(); }); food.append(row); }
     const categoryBudget = el("category-budget"); categoryBudget.replaceChildren();
-    for (const [name, monthlyLimit] of Object.entries(CATEGORY_BUDGETS)) { const limit = Math.round(monthlyLimit * factor); const amount = budgetItems.filter((p) => categoryMajor(p) === name).reduce((sum, p) => sum + p.amount, 0); const row = node("button", undefined, "food-budget-row budget-filter-row"); row.type = "button"; row.classList.toggle("active", majorCategory === name); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); row.addEventListener("click", () => { majorCategory = majorCategory === name ? "all" : name; el("trend-category").value = "all"; rowLimit = 30; render(); }); categoryBudget.append(row); }
+    const categoryEntries = Object.entries(CATEGORY_BUDGETS).map(([name, monthlyLimit]) => ({ name, limit: Math.round(monthlyLimit * factor), amount: budgetItems.filter((p) => categoryMajor(p) === name).reduce((sum, p) => sum + p.amount, 0), color: CATEGORY_META.find((item) => item.major === name)?.color ?? "#9da39b" }));
+    renderBudgetDonut(categoryBudget, categoryEntries, categoryEntries.reduce((sum, entry) => sum + entry.limit, 0), "生活費");
+    for (const entry of categoryEntries) { const { name, limit, amount } = entry; const row = node("button", undefined, "food-budget-row budget-filter-row"); row.type = "button"; row.classList.toggle("active", majorCategory === name); row.append(node("span", name), node("strong", `${yen(amount)} / ${yen(limit)}`)); const bar = node("i"), fill = node("b"); fill.style.width = `${Math.min(100, amount / limit * 100)}%`; fill.style.backgroundColor = entry.color; if (amount >= limit) fill.classList.add("over-limit"); else if (amount >= limit * .9) fill.classList.add("near-limit"); bar.append(fill); row.append(bar); row.addEventListener("click", () => { majorCategory = majorCategory === name ? "all" : name; el("trend-category").value = "all"; rowLimit = 30; render(); }); categoryBudget.append(row); }
     el("trend-chart-title").textContent = mode === "week" ? "12週間の推移" : "12か月の推移";
     el("trend-coverage").textContent = firstDate ? `取得済み決済：${firstDate}〜${lastDate}。未収録期間は「未収録」と表示します。明細の未取得がある場合、合計・比較もその影響を受けます。` : "まだ決済データがありません。";
     const chartScroll = root.querySelector(".trend-chart-scroll");

@@ -254,6 +254,19 @@ export function normalizeMerchant(payment) {
 
 export function categoryFor(payment) {
   const merchant = normalizeMerchant(payment);
+  // User-confirmed corrections take precedence over imported classifications.
+  if (merchant.includes("MARUNOUCHI TERRACE")) {
+    return "飲み会・酒";
+  }
+  if (
+    merchant.includes("RAKUTENPAY AKITANAGAWASAK") ||
+    merchant.includes("JR EAST SHOPPING CENTER") ||
+    merchant.includes("HAKUYAZUKI") ||
+    merchant.includes("TENPOO SHINURAYASU") ||
+    merchant.includes("KITTE MARUNOUCHI")
+  ) {
+    return "外食（ランチ・ディナー）";
+  }
   if (merchant.includes("ROCKYKANAI")) {
     return "飲み会・酒";
   }
